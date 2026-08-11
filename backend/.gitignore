@@ -10,3 +10,5 @@ wheels/
 .venv
 
 .env
+src/assets/deployment_roadmap.txt
+src/assets/Profile_notes.txt
