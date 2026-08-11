@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyChatBot</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Personal profile bot</p>
+          <h1>MyChatBot</h1>
+          <p class="hero-text">Ask questions about your skills, experience, and background.</p>
+        </div>
+        <button id="settings-toggle" class="icon-button" aria-expanded="false">⚙</button>
+      </header>
+
+      <section class="chat-card">
+        <div class="chat-card-header">
+          <div>
+            <h2>Chat</h2>
+            <p>Ask anything about your profile and resume content.</p>
+          </div>
+          <span class="badge">Live</span>
+        </div>
+
+        <div class="chat-window" id="chat-window"></div>
+
+        <form id="chat-form" class="chat-form">
+          <input id="message-input" type="text" placeholder="Type your question..." autocomplete="off" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="settings-drawer" id="settings-drawer" aria-hidden="true">
+      <div class="settings-panel">
+        <div class="settings-header">
+          <div>
+            <h2>Hidden Settings</h2>
+            <p>Only open this when you want to update backend or upload a resume.</p>
+          </div>
+          <button id="settings-close" class="close-button" aria-label="Close settings">×</button>
+        </div>
+
+        <div class="settings-section">
+          <label for="backend-url">Backend URL</label>
+          <input id="backend-url" type="text" value="http://127.0.0.1:8000" />
+        </div>
+
+        <div class="settings-section">
+          <label for="resume-file">Upload a resume PDF</label>
+          <div class="upload-row">
+            <input id="resume-file" type="file" accept="application/pdf" />
+            <button id="upload-button" type="button">Upload</button>
+          </div>
+          <p id="upload-status" class="status-text">Hidden setup for personal resume indexing.</p>
+        </div>
+
+        <!-- <div class="settings-section">
+          <p class="asset-note">
+            A default profile notes file is loaded from <strong>src/assets/profile_notes.txt</strong>.
+            Edit that file with private details such as salary expectation, notice period, or last working day.
+          </p>
+        </div> -->
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
