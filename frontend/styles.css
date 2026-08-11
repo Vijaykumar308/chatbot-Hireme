@@ -84,6 +84,14 @@ body {
   gap: 14px;
 }
 
+.brand-logo {
+  width: 130px;
+  height: 50px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+}
+
 .brand-mark {
   width: 46px;
   height: 46px;
