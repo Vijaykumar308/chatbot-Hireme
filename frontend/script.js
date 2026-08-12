@@ -67,6 +67,20 @@ function renderStatus(text, isError = false) {
   uploadStatus.style.color = isError ? "#fb7185" : "#94a3b8";
 }
 
+function formatUserFriendlyError(message) {
+  const text = (message || "").toLowerCase();
+
+  if (text.includes("rate limit") || text.includes("temporarily unavailable") || text.includes("try again in a couple of minutes")) {
+    return "Something went wrong on the AI service. Please try again in a couple of minutes.";
+  }
+
+  if (text.includes("groq") || text.includes("api key") || text.includes("not configured")) {
+    return "The assistant is not available right now. Please try again later.";
+  }
+
+  return "Something went wrong while generating the answer. Please try again in a moment.";
+}
+
 function applyBackendUrl(url) {
   const safeUrl = (url || "").trim();
   if (!safeUrl) {
@@ -111,7 +125,7 @@ async function sendChat(question) {
 
     if (!response.ok || !data.success) {
       const errorMessage = data?.message || data?.detail || "Unable to get a response from the backend.";
-      placeholder.textContent = `Error: ${errorMessage}`;
+      placeholder.textContent = formatUserFriendlyError(errorMessage);
       scrollChatToBottom();
       return;
     }
@@ -120,7 +134,7 @@ async function sendChat(question) {
     scrollChatToBottom();
     renderStatus("Chat response received.");
   } catch (error) {
-    placeholder.textContent = `Error: ${error.message}`;
+    placeholder.textContent = "Something went wrong while connecting to the assistant. Please try again in a moment.";
     renderStatus("Failed to call backend. Confirm the server is running.", true);
   }
 }
