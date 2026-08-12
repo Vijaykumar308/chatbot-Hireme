@@ -20,6 +20,10 @@ async def chat(request: Request, q: Query):
 
     q_emb = get_embedding(q.query)
     hits = vs.similarity_search(q_emb, k=4)
+
+    if not hits:
+        hits = vs.keyword_search(q.query, k=4)
+
     if not hits:
         return {
             "success": False,

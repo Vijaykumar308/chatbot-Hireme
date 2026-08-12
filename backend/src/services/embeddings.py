@@ -20,9 +20,8 @@ def _pseudo_embedding(text: str, dim: int = 512) -> List[float]:
 def get_embedding(text: str, dim: int = 512):
     """Return an embedding for `text`.
 
-    If `GROQ_API_KEY` is present and the `groq` package is available, attempt
-    to fetch embeddings from Groq. Otherwise fall back to a deterministic
-    local pseudo-embedding so the app works offline.
+    Prefer real Groq embeddings when configured. Use a deterministic hash-based
+    fallback only if the SDK or API is unavailable.
     """
     try:
         groq_key = os.getenv("GROQ_API_KEY")
@@ -30,18 +29,31 @@ def get_embedding(text: str, dim: int = 512):
             try:
                 import groq
 
-                client = groq.GroqClient(api_key=groq_key)
-                # the exact client call may vary depending on the installed
-                # `groq` package version; wrap in try/except to fall back.
+                client = None
                 try:
-                    resp = client.embeddings.create(model="embed-1", input=text)
-                    # typical shape: {'data': [{'embedding': [...]}, ...]}
-                    return resp["data"][0]["embedding"]
+                    client = groq.Groq(api_key=groq_key)
                 except Exception:
-                    # fall through to pseudo embedding
-                    pass
+                    try:
+                        client = groq.Client(api_key=groq_key)
+                    except Exception:
+                        pass
+
+                if client is not None:
+                    for model_name in ("text-embedding-3-small", "all-minilm-l6-v2", "embed-1"):
+                        try:
+                            resp = client.embeddings.create(model=model_name, input=text)
+                            data = getattr(resp, "data", None)
+                            if data:
+                                emb = data[0].embedding
+                                if emb:
+                                    return emb
+                            if isinstance(resp, dict) and resp.get("data"):
+                                emb = resp["data"][0].get("embedding")
+                                if emb:
+                                    return emb
+                        except Exception:
+                            continue
             except Exception:
-                # groq import failed: fall back
                 pass
     except Exception:
         pass
