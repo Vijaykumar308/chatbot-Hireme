@@ -36,25 +36,72 @@ def _normalise_text(value: str) -> str:
     return (value or "").strip()
 
 
+def _extract_name(context: str) -> str:
+    if not context:
+        return ""
+
+    clean = context.replace("⋄", " ").replace("|", " ").replace("•", " ")
+    lines = [re.sub(r"\s+", " ", line).strip() for line in clean.splitlines() if line.strip()]
+
+    skip_terms = ("OBJECTIVE", "TECHNICAL", "PROFESSIONAL", "EXPERIENCE", "PROJECTS", "EDUCATION", "CERTIFICATIONS")
+
+    for line in lines[:12]:
+        upper_line = line.upper()
+        if any(term in upper_line for term in skip_terms):
+            continue
+        if "@" in line or "linkedin" in line.lower() or "github" in line.lower():
+            continue
+        if len(line.split()) < 2 or len(line.split()) > 4:
+            continue
+        if re.search(r"[A-Za-z]", line) and not re.search(r"\d", line):
+            return line
+
+    return ""
+
+
 def _extract_contact_details(context: str) -> str:
     if not context:
         return ""
 
-    contact_patterns = [
-        r"(?:phone|mobile|whatsapp|contact\s*(?:no|number)|call\s*me)\s*[:\-]?\s*([^\n]+)",
-        r"(?:email|e-mail)\s*[:\-]?\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})",
-        r"(?:linkedin|portfolio|github)\s*[:\-]?\s*(https?://[^\s]+)",
-    ]
+    text = context.replace("⋄", " ; ").replace("|", " ; ").replace("•", " ; ")
+
+    phone_candidates = []
+    phone_pattern = r"(?:\+?\d{1,3}[-\s]?)?(?:\d{10}|\d{5}[-\s]\d{5}|\d{3}[-\s]\d{3}[-\s]\d{4})"
+    for match in re.finditer(phone_pattern, text):
+        value = match.group(0).strip()
+        digits_only = value.replace("+", "").replace(" ", "").replace("-", "")
+        if len(digits_only) >= 10 and len(digits_only) <= 15:
+            phone_candidates.append(value)
+
+    email_candidates = re.findall(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", text, flags=re.IGNORECASE)
+    linkedin_candidates = re.findall(r"((?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9\-_/]+)", text, flags=re.IGNORECASE)
+    github_candidates = re.findall(r"((?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9\-_/]+)", text, flags=re.IGNORECASE)
 
     matches = []
-    for pattern in contact_patterns:
-        for match in re.finditer(pattern, context, flags=re.IGNORECASE):
-            value = match.group(1).strip() if match.lastindex else match.group(0).strip()
-            if value and value not in matches:
-                matches.append(value)
+    for value in phone_candidates:
+        if value and value not in matches:
+            matches.append(value)
+    for value in email_candidates:
+        if value and value not in matches:
+            matches.append(value)
+    for value in linkedin_candidates:
+        if value and value not in matches:
+            matches.append(value)
+    for value in github_candidates:
+        if value and value not in matches:
+            matches.append(value)
 
     if not matches:
-        return ""
+        contact_patterns = [
+            r"(?:phone|mobile|whatsapp|contact\s*(?:no|number)|call\s*me)\s*[:\-]?\s*([^\n]+)",
+            r"(?:email|e-mail)\s*[:\-]?\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})",
+            r"(?:linkedin|portfolio|github)\s*[:\-]?\s*(https?://[^\s]+)",
+        ]
+        for pattern in contact_patterns:
+            for match in re.finditer(pattern, context, flags=re.IGNORECASE):
+                value = match.group(1).strip() if match.lastindex else match.group(0).strip()
+                if value and value not in matches:
+                    matches.append(value)
 
     return "; ".join(matches)
 
@@ -92,6 +139,12 @@ def _matches_contact_question(query: str) -> bool:
     return any(term in q for term in contact_terms)
 
 
+def _matches_name_question(query: str) -> bool:
+    q = (query or "").lower()
+    name_terms = ["name", "who am i", "who is this", "who are you", "your name"]
+    return any(term in q for term in name_terms)
+
+
 def build_personal_details_response(query: str, context: str) -> Optional[str]:
     """Return a safer response for sensitive personal data like salary or direct contact details."""
     if not query:
@@ -108,6 +161,15 @@ def build_personal_details_response(query: str, context: str) -> Optional[str]:
             "This is personal CTC / compensation information, so I prefer to discuss it directly. "
             "Please contact me through the details in my profile/resume for a private discussion about my current CTC and expected CTC."
         )
+
+    if _matches_name_question(query):
+        name = _extract_name(context)
+        contact_info = _extract_contact_details(context)
+        if name and contact_info:
+            return f"My name is {name}. You can reach me at: {contact_info}."
+        if name:
+            return f"My name is {name}."
+        return "I do not have my name available in the current profile context."
 
     if _matches_contact_question(query):
         contact_info = _extract_contact_details(context)
