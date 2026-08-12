@@ -23,6 +23,7 @@ function saveBackendUrl(url) {
   localStorage.setItem(STORAGE_KEY, url);
 }
 
+
 function getDefaultBackendUrl() {
   const savedUrl = getStoredBackendUrl();
   if (savedUrl) {
