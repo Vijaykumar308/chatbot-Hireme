@@ -11,17 +11,28 @@ const settingsClose = document.getElementById("settings-close");
 
 const defaultAssistantText =
   "Hey👋, Feel free to ask me about my skills, experience, projects, availability, and more. I’ll answer based on my resume and profile.";
+const STORAGE_KEY = "hireme_backend_url";
+const DEFAULT_BACKEND_URL = "https://chatbot-hireme.onrender.com";
+const LOCAL_BACKEND_URL = "http://127.0.0.1:8000";
+
+function getStoredBackendUrl() {
+  return localStorage.getItem(STORAGE_KEY) || "";
+}
+
+function saveBackendUrl(url) {
+  localStorage.setItem(STORAGE_KEY, url);
+}
 
 function getDefaultBackendUrl() {
-  const currentOrigin = window.location.origin;
-  if (currentOrigin && currentOrigin !== "null" && !currentOrigin.startsWith("file://")) {
-    const backendPorts = ["8000", "8001", "8080", "3000"];
-    const isBackendOrigin = backendPorts.some((port) => currentOrigin.includes(`:${port}`));
-    if (isBackendOrigin) {
-      return currentOrigin;
-    }
+  const savedUrl = getStoredBackendUrl();
+  if (savedUrl) {
+    return savedUrl;
   }
-  return "http://127.0.0.1:8000";
+
+  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const selectedUrl = isLocalhost ? LOCAL_BACKEND_URL : DEFAULT_BACKEND_URL;
+  saveBackendUrl(selectedUrl);
+  return selectedUrl;
 }
 
 function scrollChatToBottom() {
@@ -54,6 +65,17 @@ function renderMessage(text, sender) {
 function renderStatus(text, isError = false) {
   uploadStatus.textContent = text;
   uploadStatus.style.color = isError ? "#fb7185" : "#94a3b8";
+}
+
+function applyBackendUrl(url) {
+  const safeUrl = (url || "").trim();
+  if (!safeUrl) {
+    return;
+  }
+
+  backendUrlInput.value = safeUrl;
+  backendUrlInput.disabled = true;
+  saveBackendUrl(safeUrl);
 }
 
 async function sendChat(question) {
@@ -170,6 +192,21 @@ uploadButton.addEventListener("click", uploadResume);
 settingsToggle.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 
+backendUrlInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const enteredValue = backendUrlInput.value.trim();
+    if (!enteredValue) {
+      renderStatus("Enter a valid backend URL first.", true);
+      return;
+    }
+
+    applyBackendUrl(enteredValue);
+    renderStatus("Backend URL saved for this browser.");
+    closeSettings();
+  }
+});
+
 window.addEventListener("click", (event) => {
   if (
     settingsDrawer.classList.contains("visible") &&
@@ -181,8 +218,9 @@ window.addEventListener("click", (event) => {
 });
 
 window.addEventListener("load", () => {
-  if (!backendUrlInput.value.trim()) {
-    backendUrlInput.value = getDefaultBackendUrl();
-  }
+  const defaultUrl = getDefaultBackendUrl();
+  backendUrlInput.value = defaultUrl;
+  backendUrlInput.disabled = true;
+
   renderMessage(defaultAssistantText, "assistant");
 });
