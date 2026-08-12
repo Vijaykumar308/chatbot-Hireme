@@ -38,6 +38,9 @@ async def chat(request: Request, q: Query):
     try:
         answer = generate_answer(q.query, combined)
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        message = str(e)
+        if "temporarily unavailable" in message.lower() or "rate limit" in message.lower() or "try again" in message.lower():
+            raise HTTPException(status_code=503, detail=message)
+        raise HTTPException(status_code=500, detail=message)
 
     return {"success": True, "answer": answer, "matches": hits}
