@@ -12,6 +12,18 @@ const settingsClose = document.getElementById("settings-close");
 const defaultAssistantText =
   "Hey👋, Feel free to ask me about my skills, experience, projects, availability, and more. I’ll answer based on my resume and profile.";
 
+function getDefaultBackendUrl() {
+  const currentOrigin = window.location.origin;
+  if (currentOrigin && currentOrigin !== "null" && !currentOrigin.startsWith("file://")) {
+    const backendPorts = ["8000", "8001", "8080", "3000"];
+    const isBackendOrigin = backendPorts.some((port) => currentOrigin.includes(`:${port}`));
+    if (isBackendOrigin) {
+      return currentOrigin;
+    }
+  }
+  return "http://127.0.0.1:8000";
+}
+
 function scrollChatToBottom() {
   requestAnimationFrame(() => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -64,7 +76,16 @@ async function sendChat(question) {
       body: JSON.stringify({ query: question }),
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data = {};
+
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = { message: rawText };
+      }
+    }
 
     if (!response.ok || !data.success) {
       const errorMessage = data?.message || data?.detail || "Unable to get a response from the backend.";
@@ -160,5 +181,8 @@ window.addEventListener("click", (event) => {
 });
 
 window.addEventListener("load", () => {
+  if (!backendUrlInput.value.trim()) {
+    backendUrlInput.value = getDefaultBackendUrl();
+  }
   renderMessage(defaultAssistantText, "assistant");
 });
