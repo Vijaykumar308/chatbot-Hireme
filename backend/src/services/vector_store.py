@@ -1,5 +1,6 @@
-from typing import List, Dict
 import math
+import re
+from typing import Dict, List
 
 
 class InMemoryVectorStore:
@@ -8,6 +9,32 @@ class InMemoryVectorStore:
 
     def add_documents(self, docs: List[Dict]):
         self.docs.extend(docs)
+
+    def keyword_search(self, query: str, k: int = 4):
+        if not self.docs or not query:
+            return []
+
+        normalized_query = query.lower().strip()
+        query_tokens = {t for t in re.findall(r"[a-z0-9+/.-]+", normalized_query) if t and len(t) > 2}
+        if not query_tokens:
+            return []
+
+        scored = []
+        for doc in self.docs:
+            text = (doc.get("text") or "").lower()
+            score = 0.0
+            if normalized_query in text:
+                score += 12.0
+            for token in query_tokens:
+                if token in text:
+                    score += 3.0
+                if token.replace("+", " ") in text:
+                    score += 1.0
+            if score > 0:
+                scored.append({"doc": doc, "score": float(score)})
+
+        scored.sort(key=lambda item: item["score"], reverse=True)
+        return scored[:k]
 
     def similarity_search(self, query_embedding: List[float], k: int = 3):
         if not self.docs:
