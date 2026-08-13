@@ -30,6 +30,8 @@ function getDefaultBackendUrl() {
     return savedUrl;
   }
 
+
+  
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   const selectedUrl = isLocalhost ? LOCAL_BACKEND_URL : DEFAULT_BACKEND_URL;
   saveBackendUrl(selectedUrl);
