@@ -37,6 +37,13 @@ class ProfileGuardrailTests(unittest.TestCase):
         self.assertNotIn("rate limit reached", message.lower())
         self.assertNotIn("llama-3.3-70b-versatile", message)
 
+    def test_name_questions_use_profile_name_fallback(self):
+        response = build_personal_details_response("what is your name?", "Software Developer | Full Stack Developer")
+
+        self.assertIsNotNone(response)
+        self.assertIn("Vijay", response)
+        self.assertIn("Kumar", response)
+
     def test_resume_style_name_and_contact_are_extracted(self):
         context = """VIJAY KUMAR
 +91 8054975142⋄Sec-32 Gurugram
