@@ -19,7 +19,10 @@
             <p class="hero-text">Meet My AI Career Assistant</p>
           </div>
         </div>
-        <button id="settings-toggle" class="icon-button" aria-expanded="false">⚙</button>
+        <div class="topbar-actions">
+          <button id="theme-toggle" class="icon-button" aria-label="Open theme manager" aria-expanded="false" title="Theme manager">◐</button>
+          <button id="settings-toggle" class="icon-button" aria-label="Open settings" aria-expanded="false">⚙</button>
+        </div>
       </header>
 
       <section class="chat-card">
@@ -38,6 +41,66 @@
           <button type="submit">Send</button>
         </form>
       </section>
+    </div>
+
+    <div class="theme-modal" id="theme-modal" aria-hidden="true">
+      <div class="theme-panel" role="dialog" aria-modal="true" aria-labelledby="theme-title">
+        <div class="theme-header">
+          <div>
+            <span class="theme-kicker">Personalize</span>
+            <h2 id="theme-title">Theme manager</h2>
+            <p>Choose the atmosphere for your workspace.</p>
+          </div>
+          <button id="theme-close" class="close-button" aria-label="Close theme manager">×</button>
+        </div>
+
+        <section class="theme-section">
+          <h3>Display mode</h3>
+          <div class="mode-grid">
+            <button class="mode-card" data-mode="light">
+              <span class="mode-preview preview-light"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Light</strong></span>
+              <small>Clear and airy</small>
+            </button>
+            <button class="mode-card" data-mode="dark">
+              <span class="mode-preview preview-dark"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Dark</strong></span>
+              <small>Deep and focused</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="theme-section">
+          <h3>Color theme</h3>
+          <div class="theme-grid">
+            <button class="theme-card" data-theme="midnight">
+              <span class="theme-swatch swatch-midnight"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Midnight Azure</strong></span>
+              <small>Deep blue and luminous</small>
+            </button>
+            <button class="theme-card" data-theme="ocean">
+              <span class="theme-swatch swatch-ocean"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Ocean Blue</strong></span>
+              <small>Calm and confident</small>
+            </button>
+            <button class="theme-card" data-theme="onyx">
+              <span class="theme-swatch swatch-onyx"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Veo Onyx</strong></span>
+              <small>Charcoal and soft white</small>
+            </button>
+            <button class="theme-card" data-theme="ember">
+              <span class="theme-swatch swatch-ember"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Ember</strong></span>
+              <small>Warm and energetic</small>
+            </button>
+            <button class="theme-card" data-theme="moss">
+              <span class="theme-swatch swatch-moss"><i></i><b></b><em></em></span>
+              <span class="choice-line"><span class="radio-dot"></span><strong>Moss</strong></span>
+              <small>Grounded and natural</small>
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
 
     <div class="settings-drawer" id="settings-drawer" aria-hidden="true">

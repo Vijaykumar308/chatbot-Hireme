@@ -13,6 +13,13 @@ def _is_contact_query(query: str) -> bool:
     return any(term in query_text for term in terms)
 
 
+def _profile_query_terms(query: str) -> str:
+    query_text = (query or "").lower()
+    if any(term in query_text for term in ("year", "experience", "experienced", "worked", "company", "employer", "organization")):
+        return "4+ years professional experience Software Engineer May 2022 June 2026 Kochar Tech"
+    return ""
+
+
 class Query(BaseModel):
     query: str
 
@@ -35,6 +42,13 @@ async def chat(request: Request, q: Query):
         contact_hits = vs.keyword_search("phone email linkedin github", k=4)
         known_ids = {hit["doc"]["id"] for hit in contact_hits}
         hits = contact_hits + [hit for hit in hits if hit["doc"]["id"] not in known_ids]
+        hits = hits[:4]
+
+    profile_terms = _profile_query_terms(q.query)
+    if profile_terms:
+        profile_hits = vs.keyword_search(profile_terms, k=4)
+        known_ids = {hit["doc"]["id"] for hit in profile_hits}
+        hits = profile_hits + [hit for hit in hits if hit["doc"]["id"] not in known_ids]
         hits = hits[:4]
 
     if not hits:
