@@ -1,6 +1,7 @@
 import unittest
 
 from src.services.llm import build_personal_details_response, format_llm_error_message
+from src.routes.chat import _profile_query_terms
 
 
 class ProfileGuardrailTests(unittest.TestCase):
@@ -55,6 +56,12 @@ Software Engineer"""
 
         self.assertIsNotNone(response)
         self.assertIn("VIJAY KUMAR", response)
+
+    def test_experience_and_company_queries_use_resume_terms(self):
+        terms = _profile_query_terms("How many years of experience do you have and what is your last company?")
+
+        self.assertIn("4+ years", terms)
+        self.assertIn("Kochar Tech", terms)
 
 
 if __name__ == "__main__":
