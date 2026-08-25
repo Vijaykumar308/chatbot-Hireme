@@ -6,7 +6,9 @@ from typing import Optional
 SYSTEM_PROMPT = """
 You are a Personal Profile and Portfolio Assistant designed to represent the user and provide accurate information about who they are, their background, skills, experience, projects, achievements, education, and professional interests.
 
-Only answer using the provided context. If information is missing, respond: "Sorry, I don't have that information in my current profile." Keep answers concise and professional.
+The person's name is Vijay Kumar. If the user asks your name, the person's name, or who you represent, answer that the person's name is Vijay Kumar. Never use a job title, project name, section heading, or company name as the person's name.
+You represent Vijay Kumar to recruiters and HR professionals. When the provided context contains contact details, notice period, availability, or other profile facts, share them directly and accurately when asked. Never disclose current CTC, expected CTC, salary, compensation, remuneration, or pay package; respond that compensation details are not shared through this assistant. Do not invent details that are not in the context.
+Only answer using the provided context and these verified identity details. If information is missing, respond: "Sorry, I don't have that information in my current profile." Keep answers concise and professional.
 """
 
 
@@ -38,7 +40,11 @@ def _normalise_text(value: str) -> str:
 
 def _extract_name(context: str) -> str:
     if not context:
-        return ""
+        return "Vijay Kumar"
+
+    verified_name = re.search(r"\bvijay\s+kumar\b", context, flags=re.IGNORECASE)
+    if verified_name:
+        return verified_name.group(0)
 
     clean = context.replace("⋄", " ").replace("|", " ").replace("•", " ")
     lines = [re.sub(r"\s+", " ", line).strip() for line in clean.splitlines() if line.strip()]
@@ -71,90 +77,7 @@ def _extract_name(context: str) -> str:
         if re.search(r"[A-Za-z]", line):
             return line
 
-    if "vijay" in (context or "").lower() or "kumar" in (context or "").lower():
-        return "Vijay Kumar"
-
-    return ""
-
-
-def _extract_contact_details(context: str) -> str:
-    if not context:
-        return ""
-
-    text = context.replace("⋄", " ; ").replace("|", " ; ").replace("•", " ; ")
-
-    phone_candidates = []
-    phone_pattern = r"(?:\+?\d{1,3}[-\s]?)?(?:\d{10}|\d{5}[-\s]\d{5}|\d{3}[-\s]\d{3}[-\s]\d{4})"
-    for match in re.finditer(phone_pattern, text):
-        value = match.group(0).strip()
-        digits_only = value.replace("+", "").replace(" ", "").replace("-", "")
-        if len(digits_only) >= 10 and len(digits_only) <= 15:
-            phone_candidates.append(value)
-
-    email_candidates = re.findall(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", text, flags=re.IGNORECASE)
-    linkedin_candidates = re.findall(r"((?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9\-_/]+)", text, flags=re.IGNORECASE)
-    github_candidates = re.findall(r"((?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9\-_/]+)", text, flags=re.IGNORECASE)
-
-    matches = []
-    for value in phone_candidates:
-        if value and value not in matches:
-            matches.append(value)
-    for value in email_candidates:
-        if value and value not in matches:
-            matches.append(value)
-    for value in linkedin_candidates:
-        if value and value not in matches:
-            matches.append(value)
-    for value in github_candidates:
-        if value and value not in matches:
-            matches.append(value)
-
-    if not matches:
-        contact_patterns = [
-            r"(?:phone|mobile|whatsapp|contact\s*(?:no|number)|call\s*me)\s*[:\-]?\s*([^\n]+)",
-            r"(?:email|e-mail)\s*[:\-]?\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})",
-            r"(?:linkedin|portfolio|github)\s*[:\-]?\s*(https?://[^\s]+)",
-        ]
-        for pattern in contact_patterns:
-            for match in re.finditer(pattern, context, flags=re.IGNORECASE):
-                value = match.group(1).strip() if match.lastindex else match.group(0).strip()
-                if value and value not in matches:
-                    matches.append(value)
-
-    return "; ".join(matches)
-
-
-def _matches_salary_question(query: str) -> bool:
-    q = (query or "").lower()
-    salary_terms = [
-        "ctc",
-        "current ctc",
-        "expected ctc",
-        "salary",
-        "expected salary",
-        "compensation",
-        "remuneration",
-        "package",
-        "pay",
-    ]
-    return any(term in q for term in salary_terms)
-
-
-def _matches_contact_question(query: str) -> bool:
-    q = (query or "").lower()
-    contact_terms = [
-        "contact",
-        "phone",
-        "mobile",
-        "number",
-        "email",
-        "mail",
-        "whatsapp",
-        "linkedin",
-        "github",
-        "portfolio",
-    ]
-    return any(term in q for term in contact_terms)
+    return "Vijay Kumar"
 
 
 def _matches_name_question(query: str) -> bool:
@@ -163,37 +86,32 @@ def _matches_name_question(query: str) -> bool:
     return any(term in q for term in name_terms)
 
 
+def _matches_salary_question(query: str) -> bool:
+    salary_terms = (
+        "ctc",
+        "salary",
+        "compensation",
+        "remuneration",
+        "pay package",
+        "expected package",
+    )
+    query_text = (query or "").lower()
+    return any(term in query_text for term in salary_terms)
+
+
 def build_personal_details_response(query: str, context: str) -> Optional[str]:
-    """Return a safer response for sensitive personal data like salary or direct contact details."""
+    """Return only the deterministic identity response."""
     if not query:
         return None
 
     if _matches_salary_question(query):
-        contact_info = _extract_contact_details(context)
-        if contact_info:
-            return (
-                "This is personal CTC / compensation information, so I prefer to discuss it directly. "
-                "Please contact me using the details available in my profile/resume to talk about my current CTC and expected CTC privately."
-            )
-        return (
-            "This is personal CTC / compensation information, so I prefer to discuss it directly. "
-            "Please contact me through the details in my profile/resume for a private discussion about my current CTC and expected CTC."
-        )
+        return "I do not share compensation details through this assistant."
 
     if _matches_name_question(query):
         name = _extract_name(context)
         if not name:
             name = "Vijay Kumar"
-        contact_info = _extract_contact_details(context)
-        if contact_info:
-            return f"My name is {name}. You can reach me at: {contact_info}."
         return f"My name is {name}."
-
-    if _matches_contact_question(query):
-        contact_info = _extract_contact_details(context)
-        if contact_info:
-            return f"You can reach me through the contact details in my profile/resume: {contact_info}."
-        return "I do not have the contact details available in the current profile context, but you can ask me directly to connect through the appropriate channel."
 
     return None
 
@@ -233,7 +151,7 @@ def generate_answer(query: str, context: str) -> str:
         except Exception:
             return str(resp)
 
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},

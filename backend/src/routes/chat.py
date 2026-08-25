@@ -2,9 +2,15 @@ from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import os
 from ..services.embeddings import get_embedding
-from ..services.llm import generate_answer
+from ..services.llm import build_personal_details_response, generate_answer
 
 router = APIRouter()
+
+
+def _is_contact_query(query: str) -> bool:
+    terms = ("contact", "phone", "mobile", "number", "email", "mail", "whatsapp", "linkedin", "github")
+    query_text = (query or "").lower()
+    return any(term in query_text for term in terms)
 
 
 class Query(BaseModel):
@@ -14,15 +20,25 @@ class Query(BaseModel):
 @router.post("/chat")
 async def chat(request: Request, q: Query):
     """Retrieval + generation: find relevant resume chunks and ask the LLM to answer."""
+    direct_response = build_personal_details_response(q.query, "")
+    if direct_response:
+        return {"success": True, "answer": direct_response, "matches": []}
+
     vs = request.app.state.vector_store
     if vs is None:
         return {"success": False, "message": "Vector store not initialized"}
 
     q_emb = get_embedding(q.query)
-    hits = vs.similarity_search(q_emb, k=4)
+    hits = vs.keyword_search(q.query, k=4)
+
+    if _is_contact_query(q.query):
+        contact_hits = vs.keyword_search("phone email linkedin github", k=4)
+        known_ids = {hit["doc"]["id"] for hit in contact_hits}
+        hits = contact_hits + [hit for hit in hits if hit["doc"]["id"] not in known_ids]
+        hits = hits[:4]
 
     if not hits:
-        hits = vs.keyword_search(q.query, k=4)
+        hits = vs.similarity_search(q_emb, k=4)
 
     if not hits:
         return {

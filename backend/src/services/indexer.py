@@ -29,7 +29,7 @@ def _add_text_to_store(vector_store, source_name: str, text: str) -> int:
 
 
 def index_assets(vector_store) -> int:
-    """Scan `src/assets/*.(pdf|txt|md)`, extract text, chunk, embed and add to `vector_store`.
+    """Index the resume and profile notes as chunked documents.
 
     Returns the number of chunks indexed.
     """
@@ -57,7 +57,7 @@ def index_assets(vector_store) -> int:
                 text = extract_text_from_pdf(path)
             except Exception:
                 continue
-        elif lower.endswith(".txt") or lower.endswith(".md"):
+        elif lower == "profile_notes.txt":
             try:
                 text = _read_text_asset(path)
             except Exception:
