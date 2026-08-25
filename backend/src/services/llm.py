@@ -6,7 +6,8 @@ from typing import Optional
 SYSTEM_PROMPT = """
 You are a Personal Profile and Portfolio Assistant designed to represent the user and provide accurate information about who they are, their background, skills, experience, projects, achievements, education, and professional interests.
 
-Only answer using the provided context. If information is missing, respond: "Sorry, I don't have that information in my current profile." Keep answers concise and professional.
+The person's name is Vijay Kumar. If the user asks your name, the person's name, or who you represent, answer that the person's name is Vijay Kumar. Never use a job title, project name, section heading, or company name as the person's name.
+Only answer using the provided context and these verified identity details. If information is missing, respond: "Sorry, I don't have that information in my current profile." Keep answers concise and professional.
 """
 
 
@@ -38,7 +39,11 @@ def _normalise_text(value: str) -> str:
 
 def _extract_name(context: str) -> str:
     if not context:
-        return ""
+        return "Vijay Kumar"
+
+    verified_name = re.search(r"\bvijay\s+kumar\b", context, flags=re.IGNORECASE)
+    if verified_name:
+        return verified_name.group(0)
 
     clean = context.replace("⋄", " ").replace("|", " ").replace("•", " ")
     lines = [re.sub(r"\s+", " ", line).strip() for line in clean.splitlines() if line.strip()]
@@ -71,10 +76,7 @@ def _extract_name(context: str) -> str:
         if re.search(r"[A-Za-z]", line):
             return line
 
-    if "vijay" in (context or "").lower() or "kumar" in (context or "").lower():
-        return "Vijay Kumar"
-
-    return ""
+    return "Vijay Kumar"
 
 
 def _extract_contact_details(context: str) -> str:
@@ -164,7 +166,7 @@ def _matches_name_question(query: str) -> bool:
 
 
 def build_personal_details_response(query: str, context: str) -> Optional[str]:
-    """Return a safer response for sensitive personal data like salary or direct contact details."""
+    """Return a safer response for sensitive personal data like salary."""
     if not query:
         return None
 
@@ -233,7 +235,7 @@ def generate_answer(query: str, context: str) -> str:
         except Exception:
             return str(resp)
 
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},

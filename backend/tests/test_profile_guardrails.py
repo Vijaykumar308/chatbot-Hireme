@@ -29,13 +29,13 @@ class ProfileGuardrailTests(unittest.TestCase):
 
     def test_rate_limit_errors_are_formatted_gracefully(self):
         message = format_llm_error_message(
-            "Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile`...'}}"
+            "Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b`...'}}"
         )
 
         self.assertIn("temporarily unavailable", message.lower())
         self.assertIn("try again", message.lower())
         self.assertNotIn("rate limit reached", message.lower())
-        self.assertNotIn("llama-3.3-70b-versatile", message)
+        self.assertNotIn("openai/gpt-oss-120b", message)
 
     def test_name_questions_use_profile_name_fallback(self):
         response = build_personal_details_response("what is your name?", "Software Developer | Full Stack Developer")
@@ -43,6 +43,11 @@ class ProfileGuardrailTests(unittest.TestCase):
         self.assertIsNotNone(response)
         self.assertIn("Vijay", response)
         self.assertIn("Kumar", response)
+
+    def test_name_questions_never_use_a_heading_as_name(self):
+        response = build_personal_details_response("what is your name?", "Education\nHireMe\nSoftware Developer")
+
+        self.assertEqual(response, "My name is Vijay Kumar.")
 
     def test_resume_style_name_and_contact_are_extracted(self):
         context = """VIJAY KUMAR

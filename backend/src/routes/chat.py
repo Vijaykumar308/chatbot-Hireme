@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import os
 from ..services.embeddings import get_embedding
-from ..services.llm import generate_answer
+from ..services.llm import build_personal_details_response, generate_answer
 
 router = APIRouter()
 
@@ -14,15 +14,19 @@ class Query(BaseModel):
 @router.post("/chat")
 async def chat(request: Request, q: Query):
     """Retrieval + generation: find relevant resume chunks and ask the LLM to answer."""
+    direct_response = build_personal_details_response(q.query, "")
+    if direct_response:
+        return {"success": True, "answer": direct_response, "matches": []}
+
     vs = request.app.state.vector_store
     if vs is None:
         return {"success": False, "message": "Vector store not initialized"}
 
     q_emb = get_embedding(q.query)
-    hits = vs.similarity_search(q_emb, k=4)
+    hits = vs.keyword_search(q.query, k=4)
 
     if not hits:
-        hits = vs.keyword_search(q.query, k=4)
+        hits = vs.similarity_search(q_emb, k=4)
 
     if not hits:
         return {
