@@ -7,6 +7,12 @@ from ..services.llm import build_personal_details_response, generate_answer
 router = APIRouter()
 
 
+def _is_contact_query(query: str) -> bool:
+    terms = ("contact", "phone", "mobile", "number", "email", "mail", "whatsapp", "linkedin", "github")
+    query_text = (query or "").lower()
+    return any(term in query_text for term in terms)
+
+
 class Query(BaseModel):
     query: str
 
@@ -24,6 +30,12 @@ async def chat(request: Request, q: Query):
 
     q_emb = get_embedding(q.query)
     hits = vs.keyword_search(q.query, k=4)
+
+    if _is_contact_query(q.query):
+        contact_hits = vs.keyword_search("phone email linkedin github", k=4)
+        known_ids = {hit["doc"]["id"] for hit in contact_hits}
+        hits = contact_hits + [hit for hit in hits if hit["doc"]["id"] not in known_ids]
+        hits = hits[:4]
 
     if not hits:
         hits = vs.similarity_search(q_emb, k=4)
