@@ -8,12 +8,60 @@ const uploadStatus = document.getElementById("upload-status");
 const settingsToggle = document.getElementById("settings-toggle");
 const settingsDrawer = document.getElementById("settings-drawer");
 const settingsClose = document.getElementById("settings-close");
+const themeToggle = document.getElementById("theme-toggle");
+const themeModal = document.getElementById("theme-modal");
+const themeClose = document.getElementById("theme-close");
+const modeCards = [...document.querySelectorAll("[data-mode]")];
+const themeCards = [...document.querySelectorAll("[data-theme]")];
 
 const defaultAssistantText =
   "Hey👋, Feel free to ask me about my skills, experience, projects, availability, and more. I’ll answer based on my resume and profile.";
 const STORAGE_KEY = "hireme_backend_url";
 const DEFAULT_BACKEND_URL = "https://chatbot-hireme.onrender.com";
 const LOCAL_BACKEND_URL = "http://127.0.0.1:8000";
+const THEME_STORAGE_KEY = "hireme_theme_settings";
+const themePalettes = {
+  midnight: { bg: "#0a1120", panel: "#0e172c", surface: "#111c34", accent: "#38bdf8", strong: "#7dd3fc" },
+  ocean: { bg: "#0a1a2d", panel: "#102746", surface: "#183258", accent: "#60a5fa", strong: "#bfdbfe" },
+  onyx: { bg: "#151515", panel: "#222222", surface: "#2b2b2b", accent: "#d4d4d8", strong: "#fafafa" },
+  ember: { bg: "#21150f", panel: "#3a2418", surface: "#4b2e1d", accent: "#fb923c", strong: "#fed7aa" },
+  moss: { bg: "#172015", panel: "#25301d", surface: "#303e25", accent: "#d4c94a", strong: "#fef08a" },
+};
+
+function applyTheme(mode, theme) {
+  const palette = themePalettes[theme] || themePalettes.midnight;
+  document.body.dataset.mode = mode;
+  document.body.dataset.theme = theme;
+  document.documentElement.style.setProperty("--bg", palette.bg);
+  document.documentElement.style.setProperty("--panel", palette.panel);
+  document.documentElement.style.setProperty("--surface", palette.surface);
+  document.documentElement.style.setProperty("--accent", palette.accent);
+  document.documentElement.style.setProperty("--accent-strong", palette.strong);
+  localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ mode, theme }));
+  modeCards.forEach((card) => card.classList.toggle("selected", card.dataset.mode === mode));
+  themeCards.forEach((card) => card.classList.toggle("selected", card.dataset.theme === theme));
+}
+
+function loadTheme() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY) || "{}");
+    applyTheme(saved.mode || "dark", saved.theme || "midnight");
+  } catch {
+    applyTheme("dark", "midnight");
+  }
+}
+
+function openThemeManager() {
+  themeModal.classList.add("visible");
+  themeModal.setAttribute("aria-hidden", "false");
+  themeToggle.setAttribute("aria-expanded", "true");
+}
+
+function closeThemeManager() {
+  themeModal.classList.remove("visible");
+  themeModal.setAttribute("aria-hidden", "true");
+  themeToggle.setAttribute("aria-expanded", "false");
+}
 
 function getStoredBackendUrl() {
   return localStorage.getItem(STORAGE_KEY) || "";
@@ -208,6 +256,16 @@ chatForm.addEventListener("submit", (event) => {
 uploadButton.addEventListener("click", uploadResume);
 settingsToggle.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
+themeToggle.addEventListener("click", openThemeManager);
+themeClose.addEventListener("click", closeThemeManager);
+modeCards.forEach((card) => card.addEventListener("click", () => {
+  const saved = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY) || "{}");
+  applyTheme(card.dataset.mode, saved.theme || "midnight");
+}));
+themeCards.forEach((card) => card.addEventListener("click", () => {
+  const saved = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY) || "{}");
+  applyTheme(saved.mode || "dark", card.dataset.theme);
+}));
 
 backendUrlInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -232,9 +290,21 @@ window.addEventListener("click", (event) => {
   ) {
     closeSettings();
   }
+
+  if (themeModal.classList.contains("visible") && event.target === themeModal) {
+    closeThemeManager();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeThemeManager();
+    closeSettings();
+  }
 });
 
 window.addEventListener("load", () => {
+  loadTheme();
   const defaultUrl = getDefaultBackendUrl();
   backendUrlInput.value = defaultUrl;
   backendUrlInput.disabled = true;
