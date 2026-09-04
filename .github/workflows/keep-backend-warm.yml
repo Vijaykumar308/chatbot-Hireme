@@ -1,0 +1,17 @@
+name: Keep backend warm
+
+on:
+  schedule:
+    # GitHub cron runs at these minute marks; the longest gap is eight minutes.
+    - cron: "*/8 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping backend health endpoint
+        run: curl --fail --silent --show-error --max-time 30 https://chatbot-hireme.onrender.com/health

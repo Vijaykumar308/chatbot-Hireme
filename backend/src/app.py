@@ -1,4 +1,5 @@
 from urllib.parse import urlsplit
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from dotenv import load_dotenv
@@ -64,6 +65,16 @@ app.add_middleware(
 @app.get("/")
 def home():
     return {"success": True, "message": "This is a Home route"}
+
+
+@app.get("/health")
+def health():
+    """Lightweight liveness endpoint that does not call external services."""
+    return {
+        "success": True,
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @app.get("/check")
