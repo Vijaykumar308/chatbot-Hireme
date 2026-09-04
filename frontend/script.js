@@ -28,6 +28,8 @@ const themePalettes = {
   moss: { bg: "#172015", panel: "#25301d", surface: "#303e25", accent: "#d4c94a", strong: "#fef08a" },
 };
 
+let composerFocused = false;
+
 function applyTheme(mode, theme) {
   const palette = themePalettes[theme] || themePalettes.midnight;
   document.body.dataset.mode = mode;
@@ -94,6 +96,37 @@ function scrollChatToBottom() {
       lastMessage.scrollIntoView({ block: "end", inline: "nearest" });
     }
   });
+}
+
+function updateViewportHeight() {
+  const visualViewportHeight = window.visualViewport?.height || window.innerHeight;
+  const visualViewportOffset = window.visualViewport?.offsetTop || 0;
+  const keyboardOffset = Math.max(0, window.innerHeight - visualViewportHeight - visualViewportOffset);
+  const viewportHeight = visualViewportHeight + visualViewportOffset;
+  const keyboardIsOpen = window.matchMedia("(max-width: 720px)").matches &&
+    (keyboardOffset > 100 || visualViewportHeight < window.innerHeight - 100);
+  document.documentElement.style.setProperty("--viewport-height", `${viewportHeight}px`);
+  document.documentElement.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
+  document.body.classList.toggle("keyboard-open", keyboardIsOpen || composerFocused);
+}
+
+function keepComposerVisible() {
+  composerFocused = true;
+  document.body.classList.add("keyboard-open");
+  requestAnimationFrame(() => {
+    chatForm.scrollIntoView({ block: "nearest", inline: "nearest" });
+    scrollChatToBottom();
+  });
+}
+
+function closeKeyboardMode() {
+  composerFocused = false;
+  window.setTimeout(() => {
+    if (document.activeElement !== messageInput) {
+      document.body.classList.remove("keyboard-open");
+      updateViewportHeight();
+    }
+  }, 150);
 }
 
 function renderMessage(text, sender) {
@@ -253,6 +286,12 @@ chatForm.addEventListener("submit", (event) => {
   sendChat(question);
 });
 
+messageInput.addEventListener("focus", keepComposerVisible);
+messageInput.addEventListener("blur", closeKeyboardMode);
+window.addEventListener("resize", updateViewportHeight);
+window.visualViewport?.addEventListener("resize", updateViewportHeight);
+window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+
 uploadButton.addEventListener("click", uploadResume);
 settingsToggle.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
@@ -304,6 +343,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("load", () => {
+  updateViewportHeight();
   loadTheme();
   const defaultUrl = getDefaultBackendUrl();
   backendUrlInput.value = defaultUrl;
